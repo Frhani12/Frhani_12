@@ -26,7 +26,7 @@ body {
 <body>
 <div class="card">
     <h2>اتصال خودکار کیف پول</h2>
-    <p>اتصال امن از طریق TON Connect</p>
+    <p>اتصال از طریق TON Connect</p>
     <div id="ton-connect"></div>
     <p id="status">در انتظار اتصال...</p>
     <p id="address"></p>
@@ -40,11 +40,21 @@ const statusBox = document.getElementById("status");
 const addressBox = document.getElementById("address");
 const disconnectButton = document.getElementById("disconnect");
 
+function sendToApp(data) {
+    if (window.opener && !window.opener.closed) {
+        window.opener.postMessage(
+            data,
+            "http://127.0.0.1:8080"
+        );
+    }
+}
+
 if (!window.TON_CONNECT_UI) {
     statusBox.textContent = "کتابخانه اتصال بارگذاری نشد.";
 } else {
     const ui = new TON_CONNECT_UI.TonConnectUI({
-        manifestUrl: window.location.origin + "/tonconnect-manifest.json",
+        manifestUrl:
+            "https://frhani12.github.io/Frhani_12/tonconnect-manifest.json",
         buttonRootId: "ton-connect"
     });
 
@@ -56,28 +66,24 @@ if (!window.TON_CONNECT_UI) {
             addressBox.textContent = address;
             disconnectButton.hidden = false;
 
-            const target = window.opener;
-
-if (target && !target.closed) {
-    target.postMessage({
-        type: "TON_WALLET_CONNECTED",
-        address: address
-    }, "http://127.0.0.1:8080");
-    }
+            sendToApp({
+                type: "TON_WALLET_CONNECTED",
+                address: address
+            });
         } else {
             statusBox.textContent = "کیف پول متصل نیست.";
             addressBox.textContent = "";
             disconnectButton.hidden = true;
 
-            if (window.parent !== window) {
-                window.parent.postMessage({
-                    type: "TON_WALLET_DISCONNECTED"
-                }, "http://127.0.0.1:8080");
-            }
+            sendToApp({
+                type: "TON_WALLET_DISCONNECTED"
+            });
         }
     });
 
-    disconnectButton.addEventListener("click", () => ui.disconnect());
+    disconnectButton.addEventListener("click", () => {
+        ui.disconnect();
+    });
 }
 </script>
 </body>
