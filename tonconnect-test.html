@@ -56,12 +56,14 @@ if (!window.TON_CONNECT_UI) {
             addressBox.textContent = address;
             disconnectButton.hidden = false;
 
-            if (window.parent !== window) {
-                window.parent.postMessage({
-                    type: "TON_WALLET_CONNECTED",
-                    address: address
-                }, "http://127.0.0.1:8080");
-            }
+            const target = window.opener;
+
+if (target && !target.closed) {
+    target.postMessage({
+        type: "TON_WALLET_CONNECTED",
+        address: address
+    }, "http://127.0.0.1:8080");
+    }
         } else {
             statusBox.textContent = "کیف پول متصل نیست.";
             addressBox.textContent = "";
