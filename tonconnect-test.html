@@ -8,104 +8,63 @@ cat > tonconnect-test.html <<'EOF'
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>اتصال کیف پول TON</title>
 <style>
-body {
-    background:#101827;
-    color:white;
-    font-family:sans-serif;
-    text-align:center;
-    padding:30px;
-}
-.card {
-    background:#1e293b;
-    padding:25px;
-    border-radius:15px;
-}
-#address {
-    overflow-wrap:anywhere;
-    direction:ltr;
-}
+body{background:#101827;color:white;font-family:sans-serif;text-align:center;padding:30px}
+.card{background:#1e293b;padding:25px;border-radius:15px}
+#address{overflow-wrap:anywhere;direction:ltr}
 </style>
 </head>
 <body>
 <div class="card">
-    <h2>اتصال کیف پول به برنامه</h2>
-    <p>اتصال از طریق TON Connect</p>
-    <div id="ton-connect"></div>
-    <p id="status">در انتظار اتصال...</p>
-    <p id="address"></p>
-    <button id="disconnect" hidden>قطع الاتصال</button>
-    <p>این صفحه فقط برای اتصال کیف پول است و هیچ تراکنشی انجام نمی‌دهد.</p>
+<h2>اتصال کیف پول TON</h2>
+<p>اتصال از طریق TON Connect</p>
+<div id="ton-connect"></div>
+<p id="status">در انتظار اتصال...</p>
+<p id="address"></p>
+<p>این صفحه هیچ تراکنشی انجام نمی‌دهد.</p>
 </div>
 
 <script src="https://unpkg.com/@tonconnect/ui@5.0.0/dist/tonconnect-ui.min.js"></script>
 <script>
 const statusBox = document.getElementById("status");
 const addressBox = document.getElementById("address");
-const disconnectButton = document.getElementById("disconnect");
-
-const APP_ORIGIN = "http://127.0.0.1:8080";
-
-function sendToApp(data) {
-    if (window.opener && !window.opener.closed) {
-        window.opener.postMessage(data, APP_ORIGIN);
-        return true;
-    }
-    statusBox.textContent =
-        "صفحه برنامه اصلی پیدا نشد. اتصال را از داخل برنامه باز کنید.";
-    return false;
-}
-
-window.addEventListener("message", event => {
-    if (event.origin !== APP_ORIGIN) return;
-
-    if (event.data && event.data.type === "TON_DISCONNECT_REQUEST") {
-        if (window.tonConnectUI) {
-            window.tonConnectUI.disconnect();
-        }
-    }
-});
+const APP_URL = "http://127.0.0.1:8080/";
+const disconnectRequested = location.hash === "#disconnect";
 
 if (!window.TON_CONNECT_UI) {
     statusBox.textContent = "کتابخانه اتصال بارگذاری نشد.";
 } else {
     try {
         const ui = new TON_CONNECT_UI.TonConnectUI({
-            manifestUrl:
-                "https://frhani12.github.io/Frhani_12/tonconnect-manifest.json",
+            manifestUrl: "https://frhani12.github.io/Frhani_12/tonconnect-manifest.json",
             buttonRootId: "ton-connect"
         });
-
-        window.tonConnectUI = ui;
 
         ui.onStatusChange(wallet => {
             if (wallet && wallet.account && wallet.account.address) {
                 const address = wallet.account.address;
-
                 statusBox.textContent = "اتصال موفق بود.";
                 addressBox.textContent = address;
-                disconnectButton.hidden = false;
 
-                sendToApp({
-                    type: "TON_WALLET_CONNECTED",
-                    address: address
-                });
+                if (!disconnectRequested) {
+                    location.replace(
+                        APP_URL + "#ton_address=" + encodeURIComponent(address)
+                    );
+                }
             } else {
                 statusBox.textContent = "کیف پول متصل نیست.";
-                addressBox.textContent = "";
-                disconnectButton.hidden = true;
-
-                sendToApp({
-                    type: "TON_WALLET_DISCONNECTED"
-                });
             }
         });
 
-        disconnectButton.addEventListener("click", () => {
-            ui.disconnect();
-        });
-
+        if (disconnectRequested) {
+            statusBox.textContent = "در حال قطع اتصال...";
+            ui.disconnect().then(() => {
+                location.replace(APP_URL + "#ton_disconnected");
+            }).catch(error => {
+                statusBox.textContent = "خطا در قطع اتصال: " + error.message;
+            });
+        }
     } catch (error) {
-        statusBox.textContent = "خطا در راه‌اندازی اتصال: " + error.message;
+        statusBox.textContent = "خطا: " + error.message;
     }
 }
 </script>
