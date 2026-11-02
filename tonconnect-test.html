@@ -82,8 +82,16 @@ if (!window.TON_CONNECT_UI) {
     });
 
     disconnectButton.addEventListener("click", () => {
+    ui.disconnect();
+});
+
+window.addEventListener("message", event => {
+    if (event.origin !== "http://127.0.0.1:8080") return;
+
+    if (event.data && event.data.type === "TON_DISCONNECT_REQUEST") {
         ui.disconnect();
-    });
+    }
+});
 }
 </script>
 </body>
