@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>اتصال کیف پول TON</title>
+<style>
+body {
+    background:#101827;
+    color:white;
+    font-family:sans-serif;
+    text-align:center;
+    padding:15px;
+}
+.card {
+    background:#1e293b;
+    padding:20px;
+    border-radius:15px;
+}
+#address {
+    overflow-wrap:anywhere;
+    direction:ltr;
+}
+</style>
+</head>
+<body>
+<div class="card">
+    <h2>اتصال خودکار کیف پول</h2>
+    <p>اتصال امن از طریق TON Connect</p>
+    <div id="ton-connect"></div>
+    <p id="status">در انتظار اتصال...</p>
+    <p id="address"></p>
+    <button id="disconnect" hidden>قطع الاتصال</button>
+    <p>این صفحه هیچ تراکنشی انجام نمی‌دهد.</p>
+</div>
+
+<script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+<script>
+const statusBox = document.getElementById("status");
+const addressBox = document.getElementById("address");
+const disconnectButton = document.getElementById("disconnect");
+
+if (!window.TON_CONNECT_UI) {
+    statusBox.textContent = "کتابخانه اتصال بارگذاری نشد.";
+} else {
+    const ui = new TON_CONNECT_UI.TonConnectUI({
+        manifestUrl: window.location.origin + "/tonconnect-manifest.json",
+        buttonRootId: "ton-connect"
+    });
+
+    ui.onStatusChange(wallet => {
+        if (wallet) {
+            const address = wallet.account.address;
+
+            statusBox.textContent = "اتصال موفق بود.";
+            addressBox.textContent = address;
+            disconnectButton.hidden = false;
+
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: "TON_WALLET_CONNECTED",
+                    address: address
+                }, "http://127.0.0.1:8080");
+            }
+        } else {
+            statusBox.textContent = "کیف پول متصل نیست.";
+            addressBox.textContent = "";
+            disconnectButton.hidden = true;
+
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: "TON_WALLET_DISCONNECTED"
+                }, "http://127.0.0.1:8080");
+            }
+        }
+    });
+
+    disconnectButton.addEventListener("click", () => ui.disconnect());
+}
+</script>
+</body>
+</html>
